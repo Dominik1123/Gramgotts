@@ -16,7 +16,7 @@ greeting_text = 'Hi %s!\nTry /help for more infos.'
 no_user_mentioned_text = "%s, you didn't mention a user whom you credited. Use @<user> to mention a user."
 invalid_credit_format_text = '%s, the format you used is incorrect. ' + \
                              'Please use the following format: /add <debtor> <amount> <description>.'
-do_nt_credit_the_bot = "Sorry %s,\nyou cannot lend me money. I don't need any :)"
+do_not_credit_the_bot = "Sorry %s,\nyou cannot lend me money. I don't need any :)"
 
 
 def is_credit(msg):
@@ -107,7 +107,7 @@ def extract_credit(msg):
         if debtor.startswith('@'):
             if debtor[1:] == config.config['bot.name']:
                 log.logging.warning('Do not credit the bot')
-                raise RuntimeError(do_nt_credit_the_bot % msg['from']['first_name'])
+                raise RuntimeError(do_not_credit_the_bot % msg['from']['first_name'])
             credit['debtor'] = {'id': debtor,
                                 'first_name': debtor[1:]}
         else:
