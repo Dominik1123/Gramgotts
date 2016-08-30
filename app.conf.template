@@ -1,0 +1,18 @@
+bot {
+    # Bot name is not used at the moment
+    name = ""
+    token = ""
+}
+
+# Telegram section is not used at the moment
+telegram {
+    group {
+        id = 0
+    }
+}
+
+db {
+    credits {
+        path = "credits.json"
+    }
+}

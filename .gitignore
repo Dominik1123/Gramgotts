@@ -1,0 +1,11 @@
+# IDE setting
+.idea
+
+# Compiled Python code
+*.pyc
+
+# Configuration files (see .template files instead)
+app.conf
+
+# Database files
+credits.json
