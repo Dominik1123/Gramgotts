@@ -7,7 +7,6 @@ bot {
     token = ""
 }
 
-# Telegram section is not used at the moment
 telegram {
     group {
         id = 0

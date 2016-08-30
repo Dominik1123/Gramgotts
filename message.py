@@ -32,6 +32,8 @@ invalid_stats_request_format_text = '%s, the format you used is incorrect. ' + \
                                     'Please use the following format: /stats <user>'
 no_credits_for_user = "I don't have any credits that involve %s."
 
+bot_is_going_to_bed_message = "Good night folks! I'm going to bed, see you tomorrow!"
+
 
 def is_credit(msg):
     """Evaluate if this message adds a credit.

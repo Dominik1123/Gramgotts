@@ -12,5 +12,9 @@ if __name__ == '__main__':
     bot.message_loop(message.new_processor(bot))
 
     log.logging.info('Waiting for messages')
-    while True:
-        time.sleep(5)
+    try:
+        while True:
+            time.sleep(5)
+    except KeyboardInterrupt:
+        bot.sendMessage(int(config.config['telegram.group.id']), message.bot_is_going_to_bed_message)
+        quit()
