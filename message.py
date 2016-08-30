@@ -5,12 +5,15 @@ import config
 import database
 import log
 
-add_credit_command = '/add'
-info_pattern = '(/info|/help)'
+# You need to register those commands for your bot to work using the Botfather.
+commands = {
+    'add credit': '/add',
+    'help': '/help',
+}
 
-info_text = 'Hi %s!\nYou can send me credits via the "/add" command. ' + \
+help_text = 'Hi %s!\nYou can send me credits via the "/add" command. ' + \
             'The format is /add <debtor> <amount> <description>.'
-help_text = "Sorry %s, I didn't understand your request. Try /help for more infos."
+unknown_request_text = "Sorry %s, I didn't understand your request. Try /help for more infos."
 credit_success_text = 'Alright %s! I noted down that you lend %.2f Euros to %s.'
 greeting_text = 'Hi %s!\nTry /help for more infos.'
 no_user_mentioned_text = "%s, you didn't mention a user whom you credited. Use @<user> to mention a user."
@@ -27,18 +30,18 @@ def is_credit(msg):
     """
     if 'text' not in msg:
         return False
-    return msg['text'].startswith(add_credit_command)
+    return msg['text'].startswith(commands['add credit'])
 
 
-def is_info_request(msg):
-    """Evaluate if this message is a request for more information.
+def is_help_request(msg):
+    """Evaluate if this message is a request for more information about the bots usage.
 
     :param msg: dict, Telegram message
     :return: bool, True if message is prefixed with the appropriate command
     """
     if 'text' not in msg:
         return False
-    return re.match(info_pattern, msg['text']) is not None
+    return msg['text'].startswith(commands['help'])
 
 
 def is_new_user(msg):
@@ -157,9 +160,9 @@ def new_processor(bot):
                 database.add_credit_if_missing(credit)
                 bot.sendMessage(msg['chat']['id'], credit_success_text % (
                     msg['from']['first_name'], credit['amount'], credit['debtor']['first_name']))
-        elif is_info_request(msg):
-            log.logging.debug('Received info request')
-            bot.sendMessage(msg['chat']['id'], info_text % msg['from']['first_name'])
+        elif is_help_request(msg):
+            log.logging.debug('Received help request')
+            bot.sendMessage(msg['chat']['id'], help_text % msg['from']['first_name'])
         elif is_new_user(msg):
             log.logging.debug('New user joined group: %s' % msg['new_chat_member']['first_name'])
             bot.sendMessage(msg['chat']['id'], greeting_text % msg['new_chat_member']['first_name'])
@@ -167,6 +170,6 @@ def new_processor(bot):
             log.logging.debug('User left group: %s' % msg['left_chat_member']['first_name'])
         else:
             log.logging.debug('Unknown command')
-            bot.sendMessage(msg['chat']['id'], help_text % msg['from']['first_name'])
+            bot.sendMessage(msg['chat']['id'], unknown_request_text % msg['from']['first_name'])
 
     return process
