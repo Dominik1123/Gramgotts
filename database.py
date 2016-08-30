@@ -43,7 +43,7 @@ def remove_credit_is_donor_matches(credit_id, issuer):
     return credit
 
 
-def get_all_credits(user):
+def get_all_credits(user=None):
     """Returns all credits in the database.
 
     :param user: dict, Telegram user object

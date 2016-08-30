@@ -3,6 +3,7 @@ import re
 
 import config
 import database
+import finance
 import log
 
 # You need to register those commands for your bot to work using the Botfather.
@@ -10,6 +11,7 @@ commands = {
     'add credit': '/add',
     'undo': '/undo',
     'stats': '/stats',
+    'bill': '/bill',
     'help': '/help',
 }
 
@@ -62,6 +64,17 @@ def is_stats(msg):
     if 'text' not in msg:
         return False
     return msg['text'].startswith(commands['stats'])
+
+
+def is_bill_request(msg):
+    """Evaluate if this message requests the bill.
+
+    :param msg: dict, Telegram message
+    :return: bool, True if message is prefixed with the appropriate command
+    """
+    if 'text' not in msg:
+        return False
+    return msg['text'].startswith(commands['bill'])
 
 
 def is_help_request(msg):
@@ -269,6 +282,11 @@ def new_processor(bot):
             response = pretty_string_for_many_credits(database.get_all_credits(user=user))
             if not response:
                 response = no_credits_for_user % user['first_name']
+            bot.sendMessage(msg['chat']['id'], response)
+        elif is_bill_request(msg):
+            log.logging.debug('Received bill request')
+            response = finance.pretty_string_for_many_transfers(
+                finance.process_many_credits(database.get_all_credits()))
             bot.sendMessage(msg['chat']['id'], response)
         elif is_help_request(msg):
             log.logging.debug('Received help request')
