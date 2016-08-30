@@ -28,6 +28,7 @@ invalid_undo_request_format_text = '%s, the format you used is incorrect. ' + \
 undo_success_text = 'Alright %s! I crossed out the line indicating that you have lent %.2f Euros to %s.'
 invalid_stats_request_format_text = '%s, the format you used is incorrect. ' + \
                                     'Please use the following format: /stats <user>'
+no_credits_for_user = "I don't have any credits that involve %s."
 
 
 def is_credit(msg):
@@ -265,7 +266,10 @@ def new_processor(bot):
         elif is_stats(msg):
             log.logging.debug('Received stats request')
             user = extract_related_user_from_stats_request(msg)
-            bot.sendMessage(msg['chat']['id'], pretty_string_for_many_credits(database.get_all_credits(user=user)))
+            response = pretty_string_for_many_credits(database.get_all_credits(user=user))
+            if not response:
+                response = no_credits_for_user % user['first_name']
+            bot.sendMessage(msg['chat']['id'], response)
         elif is_help_request(msg):
             log.logging.debug('Received help request')
             bot.sendMessage(msg['chat']['id'], help_text % msg['from']['first_name'])
