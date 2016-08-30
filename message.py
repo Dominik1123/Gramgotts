@@ -8,18 +8,26 @@ import log
 # You need to register those commands for your bot to work using the Botfather.
 commands = {
     'add credit': '/add',
+    'undo': '/undo',
+    'stats': '/stats',
     'help': '/help',
 }
 
 help_text = 'Hi %s!\nYou can send me credits via the "/add" command. ' + \
             'The format is /add <debtor> <amount> <description>.'
 unknown_request_text = "Sorry %s, I didn't understand your request. Try /help for more infos."
-credit_success_text = 'Alright %s! I noted down that you lend %.2f Euros to %s.'
+credit_success_text = 'Alright %s! I noted down that you have lent %.2f Euros to %s for %s.'
 greeting_text = 'Hi %s!\nTry /help for more infos.'
 no_user_mentioned_text = "%s, you didn't mention a user whom you credited. Use @<user> to mention a user."
 invalid_credit_format_text = '%s, the format you used is incorrect. ' + \
                              'Please use the following format: /add <debtor> <amount> <description>.'
 do_not_credit_the_bot = "Sorry %s,\nyou cannot lend me money. I don't need any :)"
+undo_info = 'If you want to undo this credit just tell me "/undo %d".'
+invalid_undo_request_format_text = '%s, the format you used is incorrect. ' + \
+                                   'Please use the following format: /undo <credit id>.'
+undo_success_text = 'Alright %s! I crossed out the line indicating that you have lent %.2f Euros to %s.'
+invalid_stats_request_format_text = '%s, the format you used is incorrect. ' + \
+                                    'Please use the following format: /stats <user>'
 
 
 def is_credit(msg):
@@ -31,6 +39,28 @@ def is_credit(msg):
     if 'text' not in msg:
         return False
     return msg['text'].startswith(commands['add credit'])
+
+
+def is_undo(msg):
+    """Evaluate if this message undoes a credit.
+
+    :param msg: dict, Telegram message
+    :return: bool, True if message is prefixed with the appropriate command
+    """
+    if 'text' not in msg:
+        return False
+    return msg['text'].startswith(commands['undo'])
+
+
+def is_stats(msg):
+    """Evaluate if this message requests the credit stats.
+
+    :param msg: dict, Telegram message
+    :return: bool, True if message is prefixed with the appropriate command
+    """
+    if 'text' not in msg:
+        return False
+    return msg['text'].startswith(commands['stats'])
 
 
 def is_help_request(msg):
@@ -120,6 +150,47 @@ def extract_credit(msg):
     return credit
 
 
+def extract_credit_id_from_undo_request(msg):
+    """Extracts the id of the credit indicated by the undo request.
+
+    :param msg: dict, Telegram message
+    :return: integer, id of the credit to be removed
+    """
+    pattern = r'^%s (?P<id>[0-9]+)$' % commands['undo']
+    match = re.match(pattern, msg['text'])
+    if match is None:
+        log.logging.warning('Invalid format for undo request')
+        raise RuntimeError(invalid_undo_request_format_text % msg['from']['first_name'])
+    return int(match.groupdict()['id'])
+
+
+def extract_related_user_from_stats_request(msg):
+    """Extract mentioned user from a stats request.
+
+    :param msg: dict, Telegram message
+    :return: dict, Telegram user object
+    """
+    try:
+        mention = next(
+            entity for entity in msg['entities'] if entity['type'] == 'text_mention' or entity['type'] == 'mention')
+    except (StopIteration, KeyError):
+        log.logging.debug('Stats request without user')
+        return None
+
+    if mention['type'] == 'text_mention':
+        return mention['user']
+    else:
+        # We allow Umlaute in a word or name
+        word_chars = 'A-Za-z\s\xe4\xc4\xf6\xd6\xfc\xdc\xdf'
+        pattern = '^%s (?P<user>[@%s]+)$' % (commands['stats'], word_chars)
+        match = re.match(pattern, msg['text'])
+        if match is None:
+            log.logging.warning('Invalid stats format: %s' % msg)
+            raise RuntimeError(invalid_stats_request_format_text % msg['from']['first_name'])
+        return {'id': match.groupdict()['user'],
+                'first_name': match.groupdict()['user'][1:]}
+
+
 def pretty_print(json_obj):
     """Pretty print a json serializable object.
 
@@ -129,12 +200,27 @@ def pretty_print(json_obj):
     print json.dumps(json_obj, indent=2)
 
 
+def pretty_string_for_many_credits(credits):
+    """Convert information from multiple credits to a string.
+
+    :param credits: list, many credit objects (see message.extract_credit)
+    :return: string, contains information of all credits in a pretty format
+    """
+    credit_strings = []
+    for credit in credits:
+        credit_strings.append('%s -> %s %.2f "%s" (#%d)' % (
+            credit['donor']['first_name'], credit['debtor']['first_name'], credit['amount'], credit['description'],
+            credit['id']))
+    return '\n'.join(credit_strings)
+
+
 def new_processor(bot):
     """Create a callback method for processing Telegram messages.
 
     :param bot: telepot.Bot, The bot that under which this callback will be registered (for answering messages)
     :return: function, callback method for processing Telegram messages
     """
+
     def process(msg):
         """Processes a Telegram message.
         Sends an appropriate answer in each case. Currently the following cases are respected:
@@ -158,8 +244,28 @@ def new_processor(bot):
             else:
                 pretty_print(credit)
                 database.add_credit_if_missing(credit)
-                bot.sendMessage(msg['chat']['id'], credit_success_text % (
-                    msg['from']['first_name'], credit['amount'], credit['debtor']['first_name']))
+                response = credit_success_text % (
+                    msg['from']['first_name'], credit['amount'], credit['debtor']['first_name'], credit['description'])
+                response += '\n' + undo_info % (msg['message_id'])
+                bot.sendMessage(msg['chat']['id'], response)
+        elif is_undo(msg):
+            log.logging.debug('Received undo request')
+            try:
+                credit_id = extract_credit_id_from_undo_request(msg)
+            except RuntimeError as err:
+                bot.sendMessage(msg['chat']['id'], err.message)
+            else:
+                try:
+                    credit = database.remove_credit_is_donor_matches(credit_id, msg['from'])
+                except RuntimeError as err:
+                    bot.sendMessage(msg['chat']['id'], err.message)
+                else:
+                    bot.sendMessage(msg['chat']['id'], undo_success_text % (msg['from']['first_name'], credit['amount'],
+                                                                            credit['debtor']['first_name']))
+        elif is_stats(msg):
+            log.logging.debug('Received stats request')
+            user = extract_related_user_from_stats_request(msg)
+            bot.sendMessage(msg['chat']['id'], pretty_string_for_many_credits(database.get_all_credits(user=user)))
         elif is_help_request(msg):
             log.logging.debug('Received help request')
             bot.sendMessage(msg['chat']['id'], help_text % msg['from']['first_name'])
