@@ -1,3 +1,6 @@
+# Use a copy of app.conf.template to create a valid application configuration named 'app.conf'
+# and fill in the missing parameters.
+
 bot {
     # Bot name is not used at the moment
     name = ""
