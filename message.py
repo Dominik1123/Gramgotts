@@ -91,8 +91,8 @@ def extract_credit(msg):
 
     # We allow Umlaute in a word or name
     word_chars = 'A-Za-z\s\xe4\xc4\xf6\xd6\xfc\xdc\xdf'
-    pattern = r'^%s (?P<debtor>[@%s]+)(?P<amount>[.0-9]+) (?P<description>[%s]+)$' % (add_credit_command, word_chars,
-                                                                                      word_chars)
+    pattern = r'^%s (?P<debtor>[@%s]+)(?P<amount>[.0-9]+) (?P<description>[%s]+)$' % (commands['add credit'],
+                                                                                      word_chars, word_chars)
     match = re.match(pattern, msg['text'])
     if match is None:
         log.logging.warning('Invalid credit format: %s' % msg)
