@@ -15,11 +15,15 @@ commands = {
     'help': '/help',
 }
 
-help_text = 'Hi %s!\nYou can send me credits via the "/add" command. ' + \
-            'The format is /add <debtor> <amount> <description>.'
+help_text = 'Hi %s!\n' + \
+            "I am managing this group's finances. I store credits that involve any of the group members and " + \
+            "I'll compute a bill from those credits at the end of each month.\n" + \
+            'You can send me credits via the "/add" command. ' + \
+            "The format is /add <debtor> <amount> <description>. The debtor must be mentioned via '@<user>'.\n" + \
+            "I am running in production mode so please don't send my any fake credits."
 unknown_request_text = "Sorry %s, I didn't understand your request. Try /help for more infos."
 credit_success_text = 'Alright %s! I noted down that you have lent %.2f Euros to %s for %s.'
-greeting_text = 'Hi %s!\nTry /help for more infos.'
+greeting_text = "Hi %s!\nIf you want more information what this is about go ahead and tell me '/help'."
 no_user_mentioned_text = "%s, you didn't mention a user whom you credited. Use @<user> to mention a user."
 invalid_credit_format_text = '%s, the format you used is incorrect. ' + \
                              'Please use the following format: /add <debtor> <amount> <description>.'
